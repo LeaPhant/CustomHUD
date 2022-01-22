@@ -17,6 +17,9 @@ import net.minecraft.world.chunk.WorldChunk;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
 
 public class ComplexData {
 
@@ -30,6 +33,7 @@ public class ComplexData {
     public static String[] clientChunkCache = null;
     public static int timeOfDay = -1;
     public static double x1 = 0, y1 = 0, z1 = 0, velocityXZ = 0, velocityY = 0, velocityXYZ = 0;
+    public static String nowPlaying = null;
 
     //Not really complex, but not sure where else to put it
     public static String address = "";
@@ -40,6 +44,7 @@ public class ComplexData {
     private static ChunkPos pos = null;
     private static CompletableFuture<WorldChunk> chunkFuture;
     private static int velocityWaitCounter = 0;
+    private static int nowPlayingWaitCounter = 0;
 
     @SuppressWarnings("ConstantConditions")
     public static void update(Profile profile) {
@@ -110,7 +115,29 @@ public class ComplexData {
             velocityXYZ = ((int)(changeXYZ*40))/10.0;
         }
 
+        if (profile.enabled.nowPlaying) {
+            if (nowPlayingWaitCounter > 0) {
+                nowPlayingWaitCounter--;
+                return;
+            }
 
+            nowPlayingWaitCounter = 20;
+
+            String cmd = "now-playing";
+            Runtime rt = Runtime.getRuntime();
+
+            try {
+                Process proc = rt.exec(cmd);
+                try(InputStreamReader reader = new InputStreamReader(proc.getInputStream())) {
+                    try(BufferedReader buf = new BufferedReader(reader)) {
+                        nowPlaying = buf.readLine();
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                nowPlaying = "–";
+            }
+        }
 
     }
 
@@ -124,6 +151,7 @@ public class ComplexData {
         sounds = null;
         clientChunkCache = null;
         x1 = y1 = z1 = velocityXZ = velocityY = velocityXYZ = 0;
+        nowPlaying = null;
     }
 
     public static class Enabled {
@@ -138,6 +166,7 @@ public class ComplexData {
         public boolean clientChunkCache = false;
         public boolean time = false;
         public boolean velocity = false;
+        public boolean nowPlaying = false;
 
     }
 
